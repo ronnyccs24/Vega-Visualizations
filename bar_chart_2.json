@@ -1,0 +1,182 @@
+{
+  "axes": [
+    {
+      "name": "lbl",
+      "type": "x",
+      "scale": "x",
+      "ticks": 5,
+      "format": "%Y",
+      "properties": {
+        "axis": {
+          "stroke": {"value": "#9BA2AA"},
+          "stroke_width": {"value": 0}
+        },
+        "ticks": {"stroke_width": {"value": 0}},
+        "labels": {
+          "dx": {"value": 5},
+          "fill": {"value": "#9BA2AA"},
+          "font_size": {"value": 10},
+          "font_weight": {"value": 300},
+          "angle": {"value": 45},
+          "align": {"value": "left"}
+        }
+      }
+    },
+    {
+      "grid": true,
+      "type": "y",
+      "layer": "back",
+      "scale": "y",
+      "ticks": 15,
+      "format": "s",
+      "properties": {
+        "axis": {
+          "stroke": {"value": "#9BA2AA"},
+          "stroke_width": {"value": 0}
+        },
+        "grid": {
+          "stroke": {"value": "#9BA2AA"},
+          "stroke_opacity": {"value": "0.5"}
+        },
+        "ticks": {"stroke": {"value": "#9BA2AA"}},
+        "labels": {
+          "fill": {"value": "#9BA2AA"},
+          "font_size": {"value": 10},
+          "font_weight": {"value": 300}
+        },
+        "major_ticks": {"stroke_width": {"value": 0}}
+      }
+    }
+  ],
+  "data": [
+    {
+      "url": "https://insights.cartodb.com/api/v2/sql?q=select country, iso, sum_2 FROM public.cait_2_0_country_ghg_emissions_toplow2011_new order by sum_2 desc",
+      "name": "table",
+      "format": {"type": "json","property": "rows"}
+    }
+  ],
+  "marks": [
+    {
+      "from": {"data": "table"},
+      "type": "rect",
+      "properties": {
+        "enter": {
+          "x": {"field": "country","scale": "x"},
+          "y": {"field": "sum_2","scale": "y"},
+          "y2": {"scale": "y","value": 0},
+          "width": {"band": true,"scale": "x","offset": -1}
+        },
+        "hover": {"fill": {"value": "#5BB1D2"}},
+        "update": {"fill": {"value": "#5BB1D2"}}
+      }
+    }
+  ],
+  "width": 270,
+  "height": 240,
+  "scales": [
+    {
+      "name": "x",
+      "type": "ordinal",
+      "range": "width",
+      "domain": {"data": "table","field": "country"}
+    },
+    {
+      "name": "y",
+      "nice": false,
+      "type": "linear",
+      "range": "height",
+      "domain": {"data": "table","field": "sum_2"}
+    }
+  ],
+  "padding": {"top": 25,"left": 78,"right": 40,"bottom": 75}
+}
+
+
+Theme + Configuration
+
+{
+  "background":"#fff",
+  "render": {"retina": true},
+  "axis": {
+    "layer": "back",
+    "ticks": 5,
+    "axisColor": "transparent",
+    "axisWidth": 1,
+    "gridColor": "#eeeeee",
+    "gridOpacity": 1,
+    "tickColor": "#eeeeee",
+    "tickLabelColor": "#758290",
+    "tickWidth": 0,
+    "tickSize": 10,
+    "tickLabelFontSize": 12,
+    "tickLabelFont": "\"Roboto\"",
+    "tickOffset": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "regular",
+    "titleColor": "#758290",
+    "titleOffset": "auto",
+    "titleOffsetAutoMin": 0,
+    "titleOffsetAutoMax": 0,
+    "titleOffsetAutoMargin": 0
+  },
+  "legend": {
+    "orient": "left",
+    "padding": 0,
+    "margin": 0,
+    "labelColor": "#758290",
+    "labelFontSize": 12,
+    "labelFont": "\"Roboto\"",
+    "labelAlign": "left",
+    "labelBaseline": "Bottom",
+    "labelOffset": 0,
+    "symbolShape": "line",
+    "symbolSize": 2,
+    "symbolStrokeWidth": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "medium",
+    "titleColor": "#758290"
+  },
+  "color": {
+    "rgb": [128,128,128],
+    "lab": [50,0,0],
+    "hcl": [0,0,50],
+    "hsl": [0,0,0.5]
+  },
+  "range": {
+    "cropColor":[
+      "#3d6ac4",
+      "#749be9",
+      "#51d4f0",
+      "#b1f3b7",
+      "#24962e"
+    ],
+    "riskColor":[
+      "#f4f4f1",
+      "#fffbca",
+      "#ffe01b",
+      "#f6bb0f",
+      "#f6811d",
+      "#e24e2c"
+    ],
+    "shapes": [
+      "circle",
+      "cross",
+      "diamond",
+      "square",
+      "triangle-down",
+      "triangle-up",
+      "line",
+      "textMark"
+    ],
+    "cropCatColor": [
+      "#D23782",
+      "#1230a5",
+      "#32866d",
+      "#ffe01b",
+      "#6e23bd",
+      "#aaa"
+    ]
+  }
+}

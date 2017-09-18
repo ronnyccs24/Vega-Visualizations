@@ -1,0 +1,104 @@
+{
+  "height": 110,
+  "padding": {"top": 88,"left": 82,"bottom": 52.1,"right": 33.5},
+  "data": [
+    {
+      "name": "data_risk",
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with chstress as (SELECT iso, values from aqueduct_water_stress_country_ranking_bau where year = '2020' and type = 'all' and values > 4 order by iso desc), crops as (SELECT * FROM combined01_prepared where impactparameter = 'Pop. at risk of hunger' and scenario = 'SSP2-GFDL' and year = '2020') select crops.*, chstress.values from crops inner join chstress on crops.iso=chstress.iso order by values desc",
+      "format": {
+        "type": "json",
+        "property": "rows",
+        "parse": {"water_risk": "number","value_hunger": "number"}
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "xscale",
+      "type": "linear",
+      "domain": {"data": "data_risk","field": "value"},
+      "range": "width",
+      "nice": true
+    },
+    {
+      "name": "yscale",
+      "type": "linear",
+      "domain": {"data": "data_risk","field": "values"},
+      "range": "height",
+      "nice": true
+    }
+  ],
+  "axes": [
+    {
+      "type": "x",
+      "scale": "xscale",
+      "orient": "bottom",
+      "ticks": 20
+    },
+    {
+      "type": "y",
+      "title": "Country Water Risk Exposure and Risk of Hunger",
+      "scale": "yscale",
+      "orient": "left",
+      "ticks": 5,
+      "grid": {"default": true},
+      "properties": {
+        "labels": {
+          "align": {"value": "left"},
+          "baseline": {"value": "bottom"}
+        },
+        "title": {
+          "y": {"value": -40},
+          "x": {"value": 240},
+          "angle": 90
+        }
+      }
+    }
+  ],
+  "marks": [
+    {
+      "type": "symbol",
+      "from": {"data": "data_risk"},
+      "properties": {
+        "enter": {
+          "x": {"field": "value","scale": "xscale"},
+          "y": {"field": "values","scale": "yscale"},
+          "size": {"value": 49},
+          "fill": {"value": "#3182bd"},
+          "opacity": {"value": 0.7}
+        },
+        "update": {"fill": {"value": "#f6bb0f"}},
+        "hover": {"fill": {"value": "#f6811d"}}
+      }
+    },
+    {
+      "type": "text",
+      "properties": {
+        "enter": {"fill": {"value": "#8a9da6"}},
+        "update": {
+          "x": {
+            "scale": "xscale",
+            "signal": "hover.value",
+            "offset": 5
+          },
+          "y": {
+            "scale": "yscale",
+            "signal": "hover.values",
+            "offset": -5
+          },
+            "text": {"signal": "hover.region"}
+        }
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "hover",
+      "init": {},
+      "streams": [
+        {"type": "symbol:mouseover","expr": "datum"},
+        {"type": "symbol:mouseout","expr": "{}"}
+      ]
+    }
+  ]
+}

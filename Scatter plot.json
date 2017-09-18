@@ -1,0 +1,134 @@
+{
+  "height": 200,
+  "padding": {"top": 50,"left": 50,"bottom": 50,"right": 20},
+  "signals": [
+    {
+      "name": "tooltip",
+      "init": {},
+      "streams": [
+        {"type": "symbol:mouseover","expr": "datum"},
+        {"type": "symbol:mouseout","expr": "{}"}
+      ]
+    }
+  ],
+  "data": [
+    {
+      "name": "table",
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with chstress as (SELECT iso, values from aqueduct_water_stress_country_ranking_bau where year = '2040' and type = 'all' and values > 4 order by iso desc), crops as (SELECT * FROM combined01_prepared where impactparameter = 'Pop. at risk of hunger' and scenario = 'SSP2-GFDL' and year = '2040') select crops.*, chstress.values from crops inner join chstress on crops.iso=chstress.iso order by values desc",
+      "format": {"type": "json","property": "rows"}
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "range": "width",
+      "zero": false,
+      "domain": {"data": "table","field": "value"}
+    },
+    {
+      "name": "size",
+      "type": "linear",
+      "range": "width",
+      "zero": false,
+      "domain": {"data": "table","field": "values"}
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "range": "height",
+      "nice": true,
+      "domain": {"data": "table","field": "values"}
+    }
+  ],
+  "axes": [
+    {
+      "type": "x",
+      "scale": "x",
+      "layer": "back",
+      "title": "Risk of Hunger",
+      "ticks": 5,
+      "tickPadding": 14.7,
+      "tickWidth": 0,
+      "tickSize": 0,
+      "grid": false,
+      "properties": {
+        "ticks": {"stroke": {"value": "#eeeeee"}},
+        "majorTicks": {"strokeWidth": {"value": 2}},
+        "labels": {
+          "fill": {"value": "#8a9da6"},
+          "fontSize": {"value": 14},
+          "align": {"value": "left"},
+          "baseline": {"value": "middle"}
+        },
+        
+        "axis": {
+          "stroke": {"value": "transparent"},
+          "strokeWidth": {"value": 1.5}
+        }
+      }
+    },
+    {
+      "type": "y",
+      "title": "Water Risk",
+      "scale": "y",
+      "layer": "back",
+      "ticks": 5,
+      "grid": true,
+      "tickPadding": -15,
+      "properties": {
+        "labels": {
+          "text": {"template": "{{datum.data|number:'.2s'}}"},
+          "baseline": {"value": "bottom"},
+          "align": {"value": "right"}
+        },
+        
+        "grid": {
+          "stroke": {"value": "#eeeeee"},
+          "strokeWidth": {"value": 1}
+        },
+        "axis": {
+          "stroke": {"value": "transparent"},
+          "strokeWidth": {"value": 1}
+        }
+      }
+    }
+  ],
+  "marks": [
+    {
+      "type": "symbol",
+      "size": {"value": 150},
+      "shape": "circle",
+      "from": {"data": "table"},
+      "properties": {
+        "enter": {
+          "x": {"scale": "x","field": "value"},
+          "y": {"scale": "y","field": "values"},
+          "opacity": {"value": 0.8},
+          "fill": {"value": "steelblue"}
+        },
+        "hover": {"opacity": {"value": 0.3}},
+        "update": {"opacity": {"value": 0.8}}
+      }
+    },
+    {
+      "type": "text",
+      "properties": {
+        "enter": {
+          "align": {"value": "center"},
+          "fill": {"value": "#4a596a"}
+        },
+        "update": {
+          "x": {"scale": "x","signal": "tooltip.value"},
+          "y": {
+            "scale": "y",
+            "signal": "tooltip.values",
+            "offset": -20
+          },
+          "text": [{"template": "{{tooltip.region}}"}],
+          "fillOpacity": [{"test": "!tooltip._id","value": 0},{"value": 1}]
+        }
+      }
+    }
+  ]
+}

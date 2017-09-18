@@ -1,0 +1,61 @@
+{ 
+  "data": [
+     {
+      "name": "aggregate",
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with chstress as (SELECT iso, values from aqueduct_water_stress_country_ranking_bau where (year = '2040') and type = 'all' and values > 4 order by iso desc), crops as (SELECT * FROM combined01_prepared where impactparameter = 'Area' and scenario = 'SSP2-MIRO' and (year = '2040')) select year, round((sum(crops.value)*247.11)::numeric, 2) as valuearea from crops inner join chstress on crops.iso=chstress.iso group by year",
+      "format": {"type": "json","property": "rows"}
+    }
+  ],
+  "scales": [
+    
+  ],
+  "axes": [
+
+  ],
+  "marks": [
+    {
+      "type": "symbol",
+      "properties": {
+        "enter": {
+          "x": {"value":5},
+          "y": {"value":35},
+          "shape": {"value": "M12.7998048,0 L0.799987801,0 C0.357994541,0 0,0.357994541 0,0.799987801 L0,17.5997316 C0,17.7453294 0.0787987984,17.8789274 0.206396853,17.9497263 C0.332794925,18.0201252 0.488792546,18.0165253 0.612390662,17.9393264 L6.79989631,14.0713854 L12.9878019,17.9389264 C13.052601,17.9793258 13.1257998,17.9997255 13.1997987,17.9997255 C13.2665977,17.9997255 13.3333967,17.9829258 13.3933958,17.9497263 C13.5209938,17.8789274 13.5997926,17.7453294 13.5997926,17.5997316 L13.5997926,0.799987801 C13.5997926,0.357994541 13.2417981,0 12.7998048,0 Z"},
+          "size": {"value":1}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "aggregate"},
+      "properties": {
+        "enter": {
+          "x": {"value": 30},
+          "y": {"value": 40},
+          "baseline": {"value": "middle"},
+          "fill": {"value": "#4a596a"},
+          "text": {
+            "template": "There will be {{datum.valuearea}} acres of growing crops under "},
+          "font": {"value": "Roboto"},
+          "fontSize": {"value": 16}
+        }
+      }
+    },
+     {
+      "type": "text",
+      "from": {"data": "aggregate"},
+      "properties": {
+        "enter": {
+          "x": {"value": 30},
+          "y": {"value": 60},
+          "baseline": {"value": "middle"},
+          "fill": {"value": "#4a596a"},
+          "text": {
+            "template": "high water stress conditions in {{datum.year}}."},
+          "font": {"value": "Roboto"},
+          "fontSize": {"value": 16}
+        }
+      }
+    }
+
+  ]
+}

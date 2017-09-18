@@ -1,0 +1,543 @@
+{
+  "data": [
+    {
+      "name": "table",
+      "url": "https://insights.cartodb.com/api/v2/sql?q=select country,rank,iso3,total FROM estimated_co2_emission_filtered",
+      "format": {"type": "json","property": "rows"}
+    },
+    {
+      "name": "current",
+      "source": "table",
+      "transform": [
+        {"test": "datum.iso3 === 'CHN'","type": "filter"},
+        {
+          "expr": "datum.rank",
+          "type": "formula",
+          "field": "current_rank"
+        }
+      ]
+    },
+    {
+      "name": "max",
+      "source": "table",
+      "transform": [{"type": "aggregate","summarize": {"rank": ["max"]}}]
+    },
+    {
+      "name": "head",
+      "source": "table",
+      "transform": [
+        {"type": "cross","with": "current"},
+        {
+          "test": "datum.b.current_rank <= 5 ? datum.a.rank <= 5 : datum.a.rank === 1",
+          "type": "filter"
+        },
+        {
+          "expr": "datum.a.rank === datum.b.current_rank ? '#5BB1D2' : '#9aa2a9'",
+          "type": "formula",
+          "field": "color"
+        },
+        {
+          "expr": "datum.a.rank === datum.b.current_rank ? '500' : '300'",
+          "type": "formula",
+          "field": "weight"
+        }
+      ]
+    },
+    {
+      "name": "head_count",
+      "source": "head",
+      "transform": [{"type": "aggregate","summarize": {"*": "count"}}]
+    },
+    {
+      "name": "center",
+      "source": "table",
+      "transform": [
+        {"type": "cross","with": "current"},
+        {"type": "cross","with": "max"},
+        {
+          "test": "datum.a.b.current_rank > 5 && datum.a.b.current_rank < datum.b.max_rank - 5 ? datum.a.a.rank >= datum.a.b.current_rank - 2 && datum.a.a.rank <= datum.a.b.current_rank + 2  : false",
+          "type": "filter"
+        },
+        {
+          "expr": "datum.a.a.rank === datum.a.b.current_rank ? '#5BB1D2' : '#9aa2a9'",
+          "type": "formula",
+          "field": "color"
+        },
+        {
+          "expr": "datum.a.a.rank === datum.a.b.current_rank ? '500' : '300'",
+          "type": "formula",
+          "field": "weight"
+        }
+      ]
+    },
+    {
+      "name": "center_count",
+      "source": "center",
+      "transform": [{"type": "aggregate","summarize": {"*": "count"}}]
+    },
+    {
+      "name": "tail",
+      "source": "table",
+      "transform": [
+        {"type": "cross","with": "current"},
+        {"type": "cross","with": "max"},
+        {
+          "test": "datum.a.b.current_rank >= datum.b.max_rank - 4 ? datum.a.a.rank >= datum.b.max_rank - 4 : datum.a.a.rank === datum.b.max_rank",
+          "type": "filter"
+        },
+        {
+          "expr": "datum.a.a.rank === datum.a.b.current_rank ? '#5BB1D2' : '#9aa2a9'",
+          "type": "formula",
+          "field": "color"
+        },
+        {
+          "expr": "datum.a.b.current_rank <= 5 || datum.a.b.current_rank >= datum.b.max_rank - 4 ? datum.color : 'transparent'",
+          "type": "formula",
+          "field": "trick_color"
+        },
+        {
+          "expr": "datum.a.b.current_rank <= 5 || datum.a.b.current_rank >= datum.b.max_rank - 4 ? '#9aa2a9' : 'transparent'",
+          "type": "formula",
+          "field": "rule_trick_color"
+        },
+        {
+          "expr": "datum.a.a.rank === datum.a.b.current_rank ? '500' : '300'",
+          "type": "formula",
+          "field": "weight"
+        }
+      ]
+    }
+  ],
+  "marks": [
+    {
+      "from": {"data": "head"},
+      "type": "text",
+      "properties": {
+        "enter": {
+          "x": {"value": 20},
+          "y": {"field": "a.rank","scale": "vertical_head"},
+          "fill": {"field": "color"},
+          "text": {"template": "{{datum.a.rank}}"},
+          "align": {"value": "right"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"value": 13},
+          "fontWeight": {"field": "weight"}
+        }
+      }
+    },
+    {
+      "from": {"data": "head"},
+      "type": "text",
+      "properties": {
+        "enter": {
+          "x": {"value": 30},
+          "y": {"field": "a.rank","scale": "vertical_head"},
+          "fill": {"field": "color"},
+          "text": {"template": "{{datum.a.country | truncate:10}}"},
+          "align": {"value": "left"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"value": 13},
+          "fontWeight": {"field": "weight"}
+        }
+      }
+    },
+    {
+      "from": {"data": "head"},
+      "type": "rect",
+      "properties": {
+        "enter": {
+          "x": {"mult": 0.5,"field": {"group": "width"}},
+          "y": {
+            "field": "a.rank",
+            "scale": "vertical_head",
+            "offset": -6
+          },
+          "fill": {"field": "color"},
+          "width": {"mult": 0.5,"field": "a.total","scale": "bar"},
+          "height": {"value": 12}
+        }
+      }
+    },
+    {
+      "from": {"data": "head_count"},
+      "type": "group",
+      "marks": [
+        {
+          "type": "rule",
+          "properties": {
+            "enter": {
+              "x": {"value": 0},
+              "y": {"value": 0,"offset": -15},
+              "x2": {"field": {"group": "width"}},
+              "stroke": {"value": "#9aa2a9"},
+              "strokeWidth": {"value": 0.5}
+            }
+          }
+        },
+        {
+          "from": {"data": "center"},
+          "type": "text",
+          "properties": {
+            "enter": {
+              "x": {"value": 20},
+              "y": {
+                "scale": "vertical_center",
+                "fimeld": "a.a.rank"
+              },
+              "fill": {"field": "color"},
+              "text": {"template": "{{datum.a.a.rank}}"},
+              "align": {"value": "right"},
+              "baseline": {"value": "middle"},
+              "fontSize": {"value": 13},
+              "fontWeight": {"field": "weight"}
+            }
+          }
+        },
+        {
+          "from": {"data": "center"},
+          "type": "text",
+          "properties": {
+            "enter": {
+              "x": {"value": 30},
+              "y": {
+                "field": "a.a.rank",
+                "scale": "vertical_center"
+              },
+              "fill": {"field": "color"},
+              "text": {
+                "template": "{{datum.a.a.country | truncate:20}}"
+              },
+              "align": {"value": "left"},
+              "baseline": {"value": "middle"},
+              "fontSize": {"value": 13},
+              "fontWeight": {"field": "weight"}
+            }
+          }
+        },
+        {
+          "from": {"data": "center"},
+          "type": "rect",
+          "properties": {
+            "enter": {
+              "x": {"mult": 0.5,"field": {"group": "width"}},
+              "y": {
+                "field": "a.a.rank",
+                "scale": "vertical_center",
+                "offset": -6
+              },
+              "fill": {"field": "color"},
+              "width": {
+                "mult": 0.5,
+                "field": "a.a.total",
+                "scale": "bar"
+              },
+              "height": {"value": 12}
+            }
+          }
+        },
+        {
+          "from": {"data": "center_count"},
+          "type": "group",
+          "marks": [
+            {
+              "type": "rule",
+              "properties": {
+                "enter": {
+                  "x": {"value": 0},
+                  "y": {"value": 0,"offset": -15},
+                  "x2": {"field": {"group": "width"}},
+                  "stroke": {"value": "#9aa2a9"},
+                  "strokeWidth": {"value": 0.5}
+                }
+              }
+            },
+            {
+              "from": {"data": "tail"},
+              "type": "text",
+              "properties": {
+                "enter": {
+                  "x": {"value": 20},
+                  "y": {
+                    "field": "a.a.rank",
+                    "scale": "vertical_tail"
+                  },
+                  "fill": {"field": "color"},
+                  "text": {"template": "{{datum.a.a.rank}}"},
+                  "align": {"value": "right"},
+                  "baseline": {"value": "middle"},
+                  "fontSize": {"value": 13},
+                  "fontWeight": {"field": "weight"}
+                }
+              }
+            },
+            {
+              "from": {"data": "tail"},
+              "type": "text",
+              "properties": {
+                "enter": {
+                  "x": {"value": 30},
+                  "y": {
+                    "field": "a.a.rank",
+                    "scale": "vertical_tail"
+                  },
+                  "fill": {"field": "color"},
+                  "text": {
+                    "template": "{{datum.a.a.country | truncate:20}}"
+                  },
+                  "align": {"value": "left"},
+                  "baseline": {"value": "middle"},
+                  "fontSize": {"value": 13},
+                  "fontWeight": {"field": "weight"}
+                }
+              }
+            },
+            {
+              "from": {"data": "tail"},
+              "type": "rect",
+              "properties": {
+                "enter": {
+                  "x": {"mult": 0.5,"field": {"group": "width"}},
+                  "y": {
+                    "field": "a.a.rank",
+                    "scale": "vertical_tail",
+                    "offset": -6
+                  },
+                  "fill": {"field": "color"},
+                  "width": {
+                    "mult": 0.5,
+                    "field": "a.a.total",
+                    "scale": "bar"
+                  },
+                  "height": {"value": 12}
+                }
+              }
+            }
+          ],
+          "properties": {
+            "enter": {
+              "y": {"mult": 20,"field": "count","offset": 10},
+              "width": {"field": {"group": "width"}}
+            }
+          }
+        }
+      ],
+      "properties": {
+        "enter": {
+          "x": {"value": 0},
+          "y": {"mult": 20,"field": "count","offset": 10},
+          "width": {"field": {"group": "width"}}
+        }
+      }
+    },
+    {
+      "from": {"data": "head_count"},
+      "type": "group",
+      "marks": [
+        {
+          "from": {"data": "tail"},
+          "type": "rule",
+          "properties": {
+            "enter": {
+              "x": {"value": 0},
+              "y": {"value": 0,"offset": -15},
+              "x2": {"field": {"group": "width"}},
+              "stroke": {"field": "rule_trick_color"},
+              "strokeWidth": {"value": 0.5}
+            }
+          }
+        },
+        {
+          "from": {"data": "tail"},
+          "type": "text",
+          "properties": {
+            "enter": {
+              "x": {"value": 20},
+              "y": {"field": "a.a.rank","scale": "vertical_tail"},
+              "fill": {"field": "trick_color"},
+              "text": {"template": "{{datum.a.a.rank}}"},
+              "align": {"value": "right"},
+              "baseline": {"value": "middle"},
+              "fontSize": {"value": 13},
+              "fontWeight": {"field": "weight"}
+            }
+          }
+        },
+        {
+          "from": {"data": "tail"},
+          "type": "text",
+          "properties": {
+            "enter": {
+              "x": {"value": 30},
+              "y": {"field": "a.a.rank","scale": "vertical_tail"},
+              "fill": {"field": "trick_color"},
+              "text": {
+                "template": "{{datum.a.a.country | truncate:20}}"
+              },
+              "align": {"value": "left"},
+              "baseline": {"value": "middle"},
+              "fontSize": {"value": 13},
+              "fontWeight": {"field": "weight"}
+            }
+          }
+        },
+        {
+          "from": {"data": "tail"},
+          "type": "rect",
+          "properties": {
+            "enter": {
+              "x": {"mult": 0.5,"field": {"group": "width"}},
+              "y": {
+                "field": "a.a.rank",
+                "scale": "vertical_tail",
+                "offset": -6
+              },
+              "fill": {"field": "trick_color"},
+              "width": {
+                "mult": 0.5,
+                "field": "a.a.total",
+                "scale": "bar"
+              },
+              "height": {"value": 12}
+            }
+          }
+        }
+      ],
+      "properties": {
+        "enter": {
+          "y": {"mult": 20,"field": "count","offset": 10},
+          "width": {"field": {"group": "width"}}
+        }
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "vertical_head",
+      "type": "ordinal",
+      "range": [0,20,40,60,80],
+      "domain": {
+        "data": "head",
+        "sort": {"op": "min","field": "a.rank"},
+        "field": "a.rank"
+      }
+    },
+    {
+      "name": "vertical_center",
+      "type": "ordinal",
+      "range": [0,20,40,60,80],
+      "domain": {
+        "data": "center",
+        "sort": {"op": "min","field": "a.a.rank"},
+        "field": "a.a.rank"
+      }
+    },
+    {
+      "name": "vertical_tail",
+      "type": "ordinal",
+      "range": [0,20,40,60,80],
+      "domain": {
+        "data": "tail",
+        "sort": {"op": "min","field": "a.a.rank"},
+        "field": "a.a.rank"
+      }
+    },
+    {
+      "name": "bar",
+      "type": "linear",
+      "range": "width",
+      "domain": {"data": "table","field": "total"}
+    }
+  ],
+  "padding": {"top": 40,"left": 20,"right": 20,"bottom": 0},
+   "width": 270,
+  "height": 240
+}
+
+
+Theme + Configuration
+{
+  "background":"#fff",
+  "render": {"retina": true},
+  "axis": {
+    "layer": "back",
+    "ticks": 5,
+    "axisColor": "transparent",
+    "axisWidth": 1,
+    "gridColor": "#eeeeee",
+    "gridOpacity": 1,
+    "tickColor": "#eeeeee",
+    "tickLabelColor": "#758290",
+    "tickWidth": 0,
+    "tickSize": 10,
+    "tickLabelFontSize": 12,
+    "tickLabelFont": "\"Roboto\"",
+    "tickOffset": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "regular",
+    "titleColor": "#758290",
+    "titleOffset": "auto",
+    "titleOffsetAutoMin": 0,
+    "titleOffsetAutoMax": 0,
+    "titleOffsetAutoMargin": 0
+  },
+  "legend": {
+    "orient": "left",
+    "padding": 0,
+    "margin": 0,
+    "labelColor": "#758290",
+    "labelFontSize": 12,
+    "labelFont": "\"Roboto\"",
+    "labelAlign": "left",
+    "labelBaseline": "Bottom",
+    "labelOffset": 0,
+    "symbolShape": "line",
+    "symbolSize": 2,
+    "symbolStrokeWidth": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "medium",
+    "titleColor": "#758290"
+  },
+  "color": {
+    "rgb": [128,128,128],
+    "lab": [50,0,0],
+    "hcl": [0,0,50],
+    "hsl": [0,0,0.5]
+  },
+  "range": {
+    "cropColor":[
+      "#3d6ac4",
+      "#749be9",
+      "#51d4f0",
+      "#b1f3b7",
+      "#24962e"
+    ],
+    "riskColor":[
+      "#f4f4f1",
+      "#fffbca",
+      "#ffe01b",
+      "#f6bb0f",
+      "#f6811d",
+      "#e24e2c"
+    ],
+    "shapes": [
+      "circle",
+      "cross",
+      "diamond",
+      "square",
+      "triangle-down",
+      "triangle-up",
+      "line",
+      "textMark"
+    ],
+    "cropCatColor": [
+      "#D23782",
+      "#1230a5",
+      "#32866d",
+      "#ffe01b",
+      "#6e23bd",
+      "#aaa"
+    ]
+  }
+}

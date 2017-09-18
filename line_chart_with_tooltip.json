@@ -1,0 +1,291 @@
+{
+  "height": 110,
+  "padding": {"top": 88,"left": 82,"bottom": 52.1,"right": 33.5},
+  "data": [
+    {
+      "name": "tables",
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with chstress as (SELECT iso, values from aqueduct_water_stress_country_ranking_bau where year in (2010,2020,2030,2040) and type = 'all' and values > 4 order by iso), crops as (SELECT commodity, iso, value, year FROM combined01_prepared where (impactparameter = 'Yield') and irrigation = 'irrigated' and year in (2010,2020,2030,2040) and scenario = 'SSP2-MIRO' and commodity = 'Rice' ), production as (SELECT round((value)::numeric, 2) as countryproduction, iso, year FROM combined01_prepared where (impactparameter = 'Production') and year in (2010,2020,2030,2040) and scenario = 'SSP2-MIRO' and commodity = 'Rice' group by iso, countryproduction, year order by iso, year), aaa as (select crops.iso as iso, round((crops.value)::numeric,2) as grownpercentage, crops.year as year, commodity from crops inner join chstress on crops.iso=chstress.iso group by crops.iso, crops.value, crops.year, commodity), t as (select production.countryproduction, production.iso, production.year, aaa.grownpercentage, aaa.commodity from production inner join aaa on production.iso=aaa.iso and production.year = aaa.year), sd as (select max(grownpercentage), iso from t group by iso order by 1 desc limit 5) select t.* from t inner join sd on t.iso=sd.iso",
+      "format": {"type": "json","property": "rows"}
+    },
+    {"name": "current","values": [{"current_year": 2030}]},
+    {
+      "name": "legend",
+      "source": "tables",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["iso"],
+          "summarize": [
+            {
+              "field": "year",
+              "ops": ["count"],
+              "as": ["counts"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "zero": false,
+      "nice": "year",
+      "range": "width",
+      "domain": {"data": "tables","field": "year"}
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "range": "height",
+      "domain": {"data": "tables","field": "grownpercentage"}
+    },
+    {
+      "name": "size",
+      "type": "log",
+      "range": [2,20],
+      "domain": {
+        "fields": [{"data": "legend","field": "countryproduction"}]
+      }
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": "riskColor",
+      "domain": {"fields": [{"data": "legend","field": "iso"}]}
+    },
+    {
+      "name": "legend-series-x",
+      "type": "ordinal",
+      "domain": {"data": "legend","field": "cat"},
+      "range": [-60,5,75,130,300]
+    },
+    {
+      "name": "legend-series-y",
+      "type": "ordinal",
+      "domain": {"data": "legend","field": "cat"},
+      "range": [-170,-170,-170,-170]
+    }
+  ],
+  "axes": [
+    {
+      "type": "x",
+      "scale": "x",
+      "formatType": "string",
+      "properties": {
+        "labels": {
+          "align": {"value": "center"},
+          "baseline": {"value": "top"}
+        }
+      }
+    },
+    {
+      "type": "y",
+      "title": "Baseline and estimated percentage of an irrigated crop grown in areas of high water stress",
+      "scale": "y",
+      "grid": {"default": true},
+      "properties": {
+        "labels": {
+          "align": {"value": "center"},
+          "baseline": {"value": "bottom"}
+        },
+        "title": {
+          "y": {"value": -60},
+          "x": {"value": 240},
+          "angle": 90
+        }
+      }
+    }
+  ],
+  "marks": [
+    {
+      "type": "group",
+      "from": {
+        "data": "tables",
+        "transform": [{"type": "facet","groupby": ["iso"]}]
+      },
+      "marks": [
+        {
+          "type": "line",
+          "properties": {
+            "enter": {
+              "x": {"scale": "x","field": "year"},
+              "y": {"scale": "y","field": "grownpercentage"},
+              "stroke": {"scale": "color","field": "iso"},
+              "strokeWidth": {"scale": "size","field": "countryproduction"}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "current_mark",
+      "type": "group",
+      "marks": [
+        {
+          "type": "rule",
+          "from": {"data": "current"},
+          "size": 4,
+          "ease": "in-out",
+          "properties": {
+            "update": {
+              "x": {"scale": "x","field": "current_year"},
+              "y": {"value": 0},
+              "y2": {"scale": "y","value": -2},
+              "stroke": {"value": "#4a596a"},
+              "strokeWidth": {"value": 1},
+              "opacity": {"value": 0.3}
+            }
+          }
+        },
+        {
+          "type": "symbol",
+          "from": {"data": "current"},
+          "properties": {
+            "update": {
+              "x": {"scale": "x","field": "current_year"},
+              "y": {"value": 120},
+              "fill": {"value": "#4a596a"},
+              "size": {"value": 70}
+            }
+          }
+        },
+        {
+          "type": "symbol",
+          "from": {"data": "current"},
+          "properties": {
+            "update": {
+              "x": {"scale": "x","field": "current_year"},
+              "y": {"value": 120},
+              "fill": {"value": "#fff"},
+              "size": {"value": 10}
+            }
+          }
+        }
+      ],
+      "properties": {"enter": {}}
+    }
+  ],
+  "legends": [
+    {
+      "fill": "color",
+      "offset": 0,
+      "properties": {
+        "legend": {
+          "x": {
+            "field": {"group": "width"},
+            "mult": 0.05,
+            "offset": 38
+          },
+          "y": {
+            "field": {"group": "height"},
+            "mult": 1.18,
+            "offset": 12
+          }
+        },
+        
+        "labels": {
+          "text": {"template": "{{datum.data}}"},
+          "x": {"scale": "legend-series-x","offset": 10},
+          "y": {"scale": "legend-series-y","offset": 5}
+        },
+        "symbols": {
+          "x": {"scale": "legend-series-x"},
+          "y": {"scale": "legend-series-y"},
+          "size": {"value": 100},
+          "shape": {"value": "square"}
+        }
+      }
+    }
+  ]
+}
+
+
+Theme + Configuration
+{
+  "background":"#fff",
+  "render": {"retina": true},
+  "axis": {
+    "layer": "back",
+    "ticks": 5,
+    "axisColor": "transparent",
+    "axisWidth": 1,
+    "gridColor": "#eeeeee",
+    "gridOpacity": 1,
+    "tickColor": "#eeeeee",
+    "tickLabelColor": "#758290",
+    "tickWidth": 0,
+    "tickSize": 10,
+    "tickLabelFontSize": 12,
+    "tickLabelFont": "\"Roboto\"",
+    "tickOffset": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "regular",
+    "titleColor": "#758290",
+    "titleOffset": "auto",
+    "titleOffsetAutoMin": 0,
+    "titleOffsetAutoMax": 0,
+    "titleOffsetAutoMargin": 0
+  },
+  "legend": {
+    "orient": "left",
+    "padding": 0,
+    "margin": 0,
+    "labelColor": "#758290",
+    "labelFontSize": 12,
+    "labelFont": "\"Roboto\"",
+    "labelAlign": "left",
+    "labelBaseline": "Bottom",
+    "labelOffset": 0,
+    "symbolShape": "line",
+    "symbolSize": 2,
+    "symbolStrokeWidth": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "medium",
+    "titleColor": "#758290"
+  },
+  "color": {
+    "rgb": [128,128,128],
+    "lab": [50,0,0],
+    "hcl": [0,0,50],
+    "hsl": [0,0,0.5]
+  },
+  "range": {
+    "cropColor":[
+      "#3d6ac4",
+      "#749be9",
+      "#51d4f0",
+      "#b1f3b7",
+      "#24962e"
+    ],
+    "riskColor":[
+      "#f4f4f1",
+      "#fffbca",
+      "#ffe01b",
+      "#f6bb0f",
+      "#f6811d",
+      "#e24e2c"
+    ],
+    "shapes": [
+      "circle",
+      "cross",
+      "diamond",
+      "square",
+      "triangle-down",
+      "triangle-up",
+      "line",
+      "textMark"
+    ],
+    "cropCatColor": [
+      "#D23782",
+      "#1230a5",
+      "#32866d",
+      "#ffe01b",
+      "#6e23bd",
+      "#aaa"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "width": 400,
+  "height": 200,
+  "padding": {"top": 20,"left": 50,"bottom": 30,"right": 10},
+  "data": [
+    {
+      "name": "table",
+      "url": "https://wri-01.carto.com/api/v2/sql?q=select sum(value), impactparameter from combined01_prepared where iso = 'USA' and scenario = 'SSP2-GFDL' and year = '2040' and (impactparameter = 'Production' or impactparameter = 'Food Demand') group by impactparameter",
+      "format": {"type": "json","property": "rows"}
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "ordinal",
+      "range": "width",
+      "domain": {"data": "table","field": "impactparameter"}
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "range": "height",
+      "domain": {"data": "table","field": "sum"},
+      "nice": true
+    }
+  ],
+  "axes": [{"type": "x","scale": "x", "title": ""},{"type": "y","scale": "y", "format": "s", "title": "Tons of Food"}],
+  "marks": [
+    {
+      "type": "rect",
+      "from": {"data": "table"},
+      "properties": {
+        "enter": {
+          "x": {"scale": "x","field": "impactparameter"},
+          "width": {"scale": "x","band": true,"offset": -1},
+          "y": {"scale": "y","field": "sum"},
+          "y2": {"scale": "y","value": 0}
+        },
+        "update": {"fill": {"value": "steelblue"}}
+      }
+    }
+  ]
+}

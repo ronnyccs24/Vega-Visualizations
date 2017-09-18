@@ -1,0 +1,247 @@
+{
+  "name": "arc",
+  "height": 300,
+  "padding": {"top": 30,"left": 30,"bottom": 30,"right": 30},
+  "data": [
+    
+    {
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with r as (SELECT sum(area*wsbs00tr/crop_total_area) as risk, crop, irrigation FROM crops_stats  group by crop, irrigation), s as (SELECT commodity, irrigation, sum(value) area FROM combined01_prepared where impactparameter='Area' and year=2010 and scenario='SSP2-GFDL' and iso = 'USA' and commodity = 'Soybean' group by irrigation, commodity), d as (select r.*, s.area from r join  s on  r.crop=lower(s.commodity) and r.irrigation=s.irrigation), h as (select area, crop, irrigation from d) select sum(area) AS value, irrigation as category from h group by irrigation ",
+      "name": "hola",
+      "format": {"type": "json","property": "rows"}
+    },
+    {
+      "name": "summary",
+      "source": "hola",
+      "transform": [{"type": "aggregate","summarize": {"value": "sum"}}]
+    },
+    {
+      "name": "layout",
+      "source": "hola",
+      "transform": [
+        {"type": "cross","with": "summary"},
+        {"type": "pie","field": "a.value","sort": true},
+        {
+          "type": "formula",
+          "field": "percentage",
+          "expr": "round(datum.a.value / datum.b.sum_value * 100) === 0 ? '<1' : round(datum.a.value / datum.b.sum_value * 100)"
+        },
+        {
+          "type": "formula",
+          "field": "angle_start",
+          "expr": "2*PI-datum.layout_end"
+        },
+        {
+          "type": "formula",
+          "field": "angle_end",
+          "expr": "datum.angle_start+datum.layout_end-datum.layout_start"
+        },
+        {
+          "type": "formula",
+          "field": "angle_mid",
+          "expr": "2*PI-datum.layout_mid"
+        }
+      ]
+    },
+    {
+      "name": "categories",
+      "source": "hola",
+      "transform": [
+        {
+          "type": "formula",
+          "field": "reverse_value",
+          "expr": "-1 * datum.value"
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "r",
+      "type": "sqrt",
+      "domain": {"data": "hola","field": "value"},
+      "range": [0,100]
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": {
+        "data": "categories",
+        "field": "category",
+        "sort": {"field": "reverse_value","op": "min"}
+      },
+      "range": "riskColor"
+    },
+    {
+      "name": "horizontal",
+      "type": "ordinal",
+      "range": "width",
+      "domain": {
+        "data": "categories",
+        "field": "category",
+        "sort": {"field": "reverse_value","op": "min"}
+      },
+      "points": true,
+      "padding": 1
+    },
+    {
+      "name": "legend-series-x",
+      "type": "ordinal",
+      "range": [175,330],
+      "domain": {"data": "categories","field": "category"}
+    }
+  ],
+  "marks": [
+    {
+      "type": "arc",
+      "from": {"data": "layout"},
+      "properties": {
+        "enter": {
+          "x": {"field": {"group": "width"},"mult": 0.525},
+          "y": {"field": {"group": "height"},"mult": 0.475},
+          "startAngle": {"field": "angle_start"},
+          "endAngle": {"field": "angle_end"},
+          "innerRadius": {"value": 150,"mult": 0.38},
+          "outerRadius": {"value": 225,"mult": 0.47},
+          "fill": {"scale": "color","field": "a.category"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "layout"},
+      "properties": {
+        "enter": {
+          "x": {"field": {"group": "width"},"mult": 0.5},
+          "y": {"field": {"group": "height"},"mult": 0.5},
+          "radius": {"field": {"group": "height"},"mult": 0.45},
+          "theta": {"field": "angle_mid"},
+          "fontSize": {"value": 12},
+          "fontWeight": {"value": "medium"},
+          "font": {"value": "\"Roboto\""},
+          "fill": {"value": "#758290"},
+          "align": {"value": "left"},
+          "baseline": {"value": "bottom"},
+          "text": {"template": "{{datum.percentage}}%"}
+        }
+      }
+    }
+  ],
+  "legends": [
+    {
+      "fill": "color",
+      "properties": {
+        "labels": {
+          "x": {"scale": "legend-series-x","offset": 10},
+          "y": {"value": 308},
+          "text": {
+            "template": "{{datum.data|left:1|upper}}{{datum.data|slice:1|truncate:15}}"
+          },
+          "fontSize": {"value": 14}
+        },
+        "categories": {
+          "x": {"value": 0,"offset": -108},
+          "y": {
+            "field": {"group": "height"},
+            "value": 0,
+            "offset": 30
+          }
+        },
+        "symbols": {
+          "x": {"scale": "legend-series-x"},
+          "y": {"value": 304},
+          "size": {"value": 100},
+          "shape": {"value": "square"}
+        }
+      }
+    }
+  ]
+}
+
+
+Theme + Configuration
+{
+  "background":"#fff",
+  "render": {"retina": true},
+  "axis": {
+    "layer": "back",
+    "ticks": 5,
+    "axisColor": "transparent",
+    "axisWidth": 1,
+    "gridColor": "#eeeeee",
+    "gridOpacity": 1,
+    "tickColor": "#eeeeee",
+    "tickLabelColor": "#758290",
+    "tickWidth": 0,
+    "tickSize": 10,
+    "tickLabelFontSize": 12,
+    "tickLabelFont": "\"Roboto\"",
+    "tickOffset": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "regular",
+    "titleColor": "#758290",
+    "titleOffset": "auto",
+    "titleOffsetAutoMin": 0,
+    "titleOffsetAutoMax": 0,
+    "titleOffsetAutoMargin": 0
+  },
+  "legend": {
+    "orient": "left",
+    "padding": 0,
+    "margin": 0,
+    "labelColor": "#758290",
+    "labelFontSize": 12,
+    "labelFont": "\"Roboto\"",
+    "labelAlign": "left",
+    "labelBaseline": "Bottom",
+    "labelOffset": 0,
+    "symbolShape": "line",
+    "symbolSize": 2,
+    "symbolStrokeWidth": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "medium",
+    "titleColor": "#758290"
+  },
+  "color": {
+    "rgb": [128,128,128],
+    "lab": [50,0,0],
+    "hcl": [0,0,50],
+    "hsl": [0,0,0.5]
+  },
+  "range": {
+    "cropColor":[
+      "#3d6ac4",
+      "#749be9",
+      "#51d4f0",
+      "#b1f3b7",
+      "#24962e"
+    ],
+    "riskColor":[
+      "#f4f4f1",
+      "#fffbca",
+      "#ffe01b",
+      "#f6bb0f",
+      "#f6811d",
+      "#e24e2c"
+    ],
+    "shapes": [
+      "circle",
+      "cross",
+      "diamond",
+      "square",
+      "triangle-down",
+      "triangle-up",
+      "line",
+      "textMark"
+    ],
+    "cropCatColor": [
+      "#D23782",
+      "#1230a5",
+      "#32866d",
+      "#ffe01b",
+      "#6e23bd",
+      "#aaa"
+    ]
+  }
+}

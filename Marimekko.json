@@ -1,0 +1,347 @@
+{
+  "axes": [
+    {
+      "grid": false,
+      "type": "x",
+      "scale": "x",
+      "ticks": 7,
+      "title": "Production",
+      "orient": "top",
+      "properties": {
+        "axis": {"stroke": {"value": "transparent"}},
+        "title": {"dy": {"value": -38}},
+        "labels": {
+          "text": {"template": "{{datum.data}}%"},
+          "align": {"value": "center"},
+          "baseline": {"value": "middle"}
+        }
+      }
+    },
+    {
+      "grid": true,
+      "type": "y",
+      "scale": "y",
+      "ticks": 6,
+      "title": "% crop area under water stress",
+      "properties": {
+        "title": {"dy": {"value": -52}},
+        "labels": {
+          "x": {"offset": -10},
+          "text": {"template": "{{datum.data}}%"},
+          "align": {"value": "right"},
+          "baseline": {"value": "middle"}
+        }
+      }
+    }
+  ],
+  "data": [
+    {
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with t as (select sum(area) as area, ws2028tl as risk, crop from crops_stats where irrigation='irrigated' group by ws2028tl, crop order by risk asc), r as (SELECT sum(value) as value, commodity FROM combined01_prepared where year='2020' and impactparameter='Production' and commodity != 'All Cereals' group by commodity order by value desc), d as ( select (value*100/(sum(value) over())) as value, commodity from r ) select crop, risk,value, (area*100/sum(area) over(partition by crop)) area_perc from d inner join t on lower(commodity)=crop order by risk asc, crop asc",
+      "name": "hist",
+      "format": {"type": "json","property": "rows"}
+    },
+    {
+      "name": "stats_risk",
+      "source": "hist",
+      "transform": [
+        {
+          "type": "stack",
+          "field": "area_perc",
+          "offset": "zero",
+          "output": {"end": "val_e","mid": "val_m","start": "val_s"},
+          "groupby": ["crop"]
+        },
+        {
+          "type": "stack",
+          "field": "value",
+          "offset": "zero",
+          "output": {"end": "t_e","mid": "t_m","start": "t_s"},
+          "groupby": ["risk"]
+        }
+      ]
+    },
+    {
+      "name": "legend_crop",
+      "source": "stats_risk",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["crop"],
+          "summarize": [
+            {"as": ["t_m"],"ops": ["max"],"field": "t_m"},
+            {"as": ["t_e"],"ops": ["max"],"field": "t_e"}
+          ]
+        },
+        {"by": "t_m","type": "sort"}
+      ]
+    },
+    {
+      "name": "legend_risk",
+      "values": [
+        {"risk": "1.No Data"},
+        {"risk": "2.Low"},
+        {"risk": "3.Mid-low"},
+        {"risk": "4.Mid-High"},
+        {"risk": "5.High"},
+        {"risk": "6.Extremely high"}
+      ]
+    },
+    {
+      "name": "separate_line",
+      "values": [{"x": 0,"y": 0},{"x": 680,"y": 0}]
+    }
+  ],
+  "marks": [
+    {
+      "from": {"data": "legend_crop"},
+      "name": "label",
+      "type": "text",
+      "properties": {
+        "update": {
+          "x": {"field": "t_m","scale": "x","offset": 0},
+          "y": {"scale": "y","value": 0,"offset": 18},
+          "fill": {"value": "#758290"},
+          "text": {
+            "template": "{{datum.crop | slice:0,1 |upper}}{{datum.crop | slice:1,100, datum.crop}}"
+          },
+          "align": {"value": "center"},
+          "angle": {"value": 0},
+          "font_size": {"value": 12}
+        }
+      },
+      "interactive": false
+    },
+    {
+      "from": {"data": "stats_risk"},
+      "name": "columns",
+      "type": "rect",
+      "properties": {
+        "enter": {
+          "x": {"field": "t_s","scale": "x"},
+          "y": {"field": "val_s","scale": "y"},
+          "x2": {"field": "t_e","scale": "x"},
+          "y2": {"field": "val_e","scale": "y"},
+          "fill": [
+            {
+              "test": "datum.risk",
+              "field": "risk",
+              "scale": "color"
+            },
+            {"value": "grey"}
+          ],
+          "stroke": {"value": "#eee"},
+          "stroke_width": {"value": 1}
+        }
+      }
+    },
+    {
+      "from": {"data": "separate_line"},
+      "type": "line",
+      "properties": {
+        "enter": {
+          "x": {"field": "x","offset": -120},
+          "y": {"field": "y","offset": 260},
+          "stroke": {"value": "#eee"},
+          "stroke_width": {"value": 1}
+        }
+      },
+      "interactive": false
+    }
+  ],
+  "height": 220,
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "range": "width",
+      "domain": {"fields": [{"data": "stats_risk","field": "t_e"}]}
+    },
+    {
+      "name": "xl",
+      "type": "linear",
+      "range": "width",
+      "domain": {"fields": [{"data": "legend_crop","field": "crop"}]}
+    },
+    {
+      "name": "x_label",
+      "type": "ordinal",
+      "range": {"fields": [{"data": "legend_crop","field": "crop"}]},
+      "domain": {"fields": [{"data": "legend_crop","field": "t_m"}]},
+      "points": false
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "range": "height",
+      "domain": {"fields": [{"data": "stats_risk","field": "val_e"}]}
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": "riskColor",
+      "domain": {"data": "legend_risk","field": "risk"}
+    },
+    {
+      "name": "legend-series-x",
+      "type": "ordinal",
+      "range": [0,90,160,0,90,160],
+      "domain": {"data": "legend_risk","field": "risk"}
+    },
+    {
+      "name": "legend-series-y",
+      "type": "ordinal",
+      "range": [-345,-345,-345,-320,-320,-320],
+      "domain": {"data": "legend_risk","field": "risk"}
+    }
+  ],
+  "legends": [
+    {
+      "fill": "color",
+      "properties": {
+        "labels": {
+          "x": {"scale": "legend-series-x","offset": 10},
+          "y": {"scale": "legend-series-y"},
+          "text": {"template": "{{datum.data}}"}
+        },
+        "legend": {
+          "x": {
+            "mult": 0.05,
+            "field": {"group": "width"},
+            "offset": -58
+          },
+          "y": {
+            "mult": 1.1,
+            "field": {"group": "height"},
+            "offset": 394
+          }
+        },
+        "symbols": {
+          "x": {"scale": "legend-series-x"},
+          "y": {"scale": "legend-series-y","offset": -5},
+          "size": {"value": 100},
+          "shape": {"value": "square"}
+        }
+      }
+    }
+  ],
+  "padding": {"top": 60,"left": 80,"right": 30,"bottom": 120},
+  "sql_config": [],
+  "params_config": [
+    {"key": "water_column","sufix": "l","required": true},
+    {"key": "year","required": true},
+    {"key": "iso","required": true}
+  ],
+  "interaction_config": [
+    {
+      "name": "tooltip",
+      "config": {
+        "fields": [
+          {"key": "crop","label": "Crop"},
+          {
+            "key": "value",
+            "label": "Crop percentage",
+            "format": ".2f",
+            "suffix": "%"
+          },
+          {"key": "risk","label": "Risk"},
+          {
+            "key": "area_perc",
+            "label": "Risk percentage",
+            "format": ".2f",
+            "suffix": "%"
+          }
+        ]
+      }
+    }
+  ]
+}
+
+
+
+Theme + Configuration
+{
+  "background":"#fff",
+  "render": {"retina": true},
+  "axis": {
+    "layer": "back",
+    "ticks": 5,
+    "axisColor": "transparent",
+    "axisWidth": 1,
+    "gridColor": "#eeeeee",
+    "gridOpacity": 1,
+    "tickColor": "#eeeeee",
+    "tickLabelColor": "#758290",
+    "tickWidth": 0,
+    "tickSize": 10,
+    "tickLabelFontSize": 12,
+    "tickLabelFont": "\"Roboto\"",
+    "tickOffset": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "regular",
+    "titleColor": "#758290",
+    "titleOffset": "auto",
+    "titleOffsetAutoMin": 0,
+    "titleOffsetAutoMax": 0,
+    "titleOffsetAutoMargin": 0
+  },
+  "legend": {
+    "orient": "left",
+    "padding": 0,
+    "margin": 0,
+    "labelColor": "#758290",
+    "labelFontSize": 12,
+    "labelFont": "\"Roboto\"",
+    "labelAlign": "left",
+    "labelBaseline": "Bottom",
+    "labelOffset": 0,
+    "symbolShape": "line",
+    "symbolSize": 2,
+    "symbolStrokeWidth": 0,
+    "titleFont": "\"Roboto\"",
+    "titleFontSize": 12,
+    "titleFontWeight": "medium",
+    "titleColor": "#758290"
+  },
+  "color": {
+    "rgb": [128,128,128],
+    "lab": [50,0,0],
+    "hcl": [0,0,50],
+    "hsl": [0,0,0.5]
+  },
+  "range": {
+    "cropColor":[
+      "#3d6ac4",
+      "#749be9",
+      "#51d4f0",
+      "#b1f3b7",
+      "#24962e"
+    ],
+    "riskColor":[
+      "#f4f4f1",
+      "#fffbca",
+      "#ffe01b",
+      "#f6bb0f",
+      "#f6811d",
+      "#e24e2c"
+    ],
+    "shapes": [
+      "circle",
+      "cross",
+      "diamond",
+      "square",
+      "triangle-down",
+      "triangle-up",
+      "line",
+      "textMark"
+    ],
+    "cropCatColor": [
+      "#D23782",
+      "#1230a5",
+      "#32866d",
+      "#ffe01b",
+      "#6e23bd",
+      "#aaa"
+    ]
+  }
+}
