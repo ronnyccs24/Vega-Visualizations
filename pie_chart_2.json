@@ -1,0 +1,170 @@
+{
+  "name": "arc",
+  "height": 310,
+  "padding": {"top": 30,"left": 30,"bottom": 30,"right": 30},
+  "data": [
+    
+    {
+      "url": "https://wri-01.carto.com/api/v2/sql?q=with t as (select sum(area) as area, ws2028tl as risk, crop from crops_stats where irrigation='irrigated' group by ws2028tl, crop order by risk asc), r as (SELECT sum(value) as value, commodity FROM combined01_prepared where year='2020' and impactparameter='Production' and commodity = 'Maize' group by commodity order by value desc), d as ( select value, commodity from r ), table1 as (select crop, risk,value, (area*100/sum(area) over(partition by crop)) area_perc from d inner join t on lower(commodity)=crop order by crop asc, risk asc), table2 as (select crop, risk, value, area_perc,round(value*area_perc/100) as perc_value, CASE when risk='1.No Data' then 1 when risk='2.Low' then 2 when risk='3.Mid-low' then 3 when risk='4.Mid-High' then 4 when risk='5.High' then 5 else 6 END as index from table1 t) select risk as category, perc_value as value from table2",
+      "name": "hola",
+      "format": {"type": "json","property": "rows"}
+    },
+    {
+      "name": "summary",
+      "source": "hola",
+      "transform": [{"type": "aggregate","summarize": {"value": "sum"}}]
+    },
+    {
+      "name": "layout",
+      "source": "hola",
+      "transform": [
+        {"type": "cross","with": "summary"},
+        {"type": "pie","field": "a.value","sort": true},
+        {
+          "type": "formula",
+          "field": "percentage",
+          "expr": "round(datum.a.value / datum.b.sum_value * 100) === 0 ? '<1' : round(datum.a.value / datum.b.sum_value * 100)"
+        },
+        {
+          "type": "formula",
+          "field": "angle_start",
+          "expr": "2*PI-datum.layout_end"
+        },
+        {
+          "type": "formula",
+          "field": "angle_end",
+          "expr": "datum.angle_start+datum.layout_end-datum.layout_start"
+        },
+        {
+          "type": "formula",
+          "field": "angle_mid",
+          "expr": "2*PI-datum.layout_mid"
+        }
+      ]
+    },
+    {
+      "name": "categories",
+      "source": "hola",
+      "transform": [
+        {
+          "type": "formula",
+          "field": "reverse_value",
+          "expr": "-1 * datum.value"
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "r",
+      "type": "sqrt",
+      "domain": {"data": "hola","field": "value"},
+      "range": [0,100]
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": [
+        "#fff",
+        "#fffbca",
+        "#ffe01b",
+        "#f6bb0f",
+        "#f6811d",
+        "#e24e2c"
+      ],
+      "domain": {"data": "categories","field": "category"}
+    },
+    {
+      "name": "horizontal",
+      "type": "ordinal",
+      "range": "width",
+      "domain": {
+        "data": "categories",
+        "field": "category",
+        "sort": {"field": "reverse_value","op": "min"}
+      },
+      "points": true,
+      "padding": 1
+    },
+    {
+      "name": "legend-series-x",
+      "type": "ordinal",
+      "range": [0,90,160,0,90,160],
+      "domain": {"data": "categories","field": "category"}
+    },
+    {
+      "name": "legend-series-y",
+      "type": "ordinal",
+      "domain": {"data": "categories","field": "category"},
+      "range": [0,0,0,25,25,25]
+    }
+  ],
+  "marks": [
+    {
+      "type": "arc",
+      "from": {"data": "layout"},
+      "properties": {
+        "enter": {
+          "x": {"field": {"group": "width"},"mult": 0.525},
+          "y": {"field": {"group": "height"},"mult": 0.475},
+          "startAngle": {"field": "angle_start"},
+          "endAngle": {"field": "angle_end"},
+          "innerRadius": {"value": 150,"mult": 0.38},
+          "outerRadius": {"value": 225,"mult": 0.47},
+          "fill": {"scale": "color","field": "a.category"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "layout"},
+      "properties": {
+        "enter": {
+          "x": {"field": {"group": "width"},"mult": 0.5},
+          "y": {"field": {"group": "height"},"mult": 0.5},
+          "radius": {"field": {"group": "height"},"mult": 0.45},
+          "theta": {"field": "angle_mid"},
+          "fontSize": {"value": 12},
+          "fontWeight": {"value": "medium"},
+          "font": {"value": "\"Roboto\""},
+          "fill": {"value": "#758290"},
+          "align": {"value": "left"},
+          "baseline": {"value": "bottom"},
+          "text": {"template": "{{datum.percentage}}%"}
+        }
+      }
+    }
+  ],
+  "legends": [
+    {
+      "fill": "color",
+      "offset": -300,
+      "properties": {
+        "labels": {
+          "x": {"scale": "legend-series-x","offset": 10},
+          "y": {"scale": "legend-series-y","offset": 302},
+          "text": {"template": "{{datum.data| upper-locale }}"},
+          "fontSize": {"value": 10},
+          "fill": {"value": "#9BA2AA"}
+        },
+        "categories": {
+          "x": {"value": 0,"offset": -108},
+          "y": {
+            "field": {"group": "height"},
+            "value": 0,
+            "offset": 30
+          }
+        },
+        "symbols": {
+          "stroke": {"value": "rgba(255,255,255,0)"},
+          "shape": {"value": "square"},
+          "size": [{"value": 100}],
+          "x": {"scale": "legend-series-x"},
+          "y": {"scale": "legend-series-y","offset": 300}
+        }
+      }
+    }
+  ]
+}
+
+
